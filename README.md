@@ -13,3 +13,11 @@ kubectl apply -f https://github.com/kyverno/kyverno/releases/download/v1.10.0/in
 ## Validation Modes
 - **audit:** Logs violations but allows resources (good for testing)
 - **enforce:** Rejects violations (production mode)
+## Use exclusions to exempt system namespaces:
+```bash
+validationFailureAction: enforce
+   excludeResources:
+     namespaces:
+     - kyverno
+     - kube-system
+```
