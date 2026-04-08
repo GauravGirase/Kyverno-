@@ -1,0 +1,20 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-host-network
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: deny-host-network
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "Host network access is not allowed"
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.spec.hostNetwork || `false` }}"
+                operator: Equals
+                value: true

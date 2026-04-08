@@ -7,3 +7,14 @@ spec:
     - name: nginx
       image: nginx
       imagePullPolicy: IfNotPresent
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-pod-network-deny
+spec:
+  hostNetwork: true
+  containers:
+    - name: nginx
+      image: nginx
