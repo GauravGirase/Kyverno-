@@ -94,6 +94,120 @@ default     9631c311-6f8f-41f4-bcba-2d47fa9ed04c   Pod    test-bad     1      0 
 ```bash
 kubectl get policyreport -n default -o yaml
 ```
+## Tier-1: Critical security policies
+### Policy 1: Deny privileged containers
+```bash
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-privileged-containers
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: deny-privileged-containers
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "Privileged containers are not allowed"
+        foreach:
+          - list: "request.object.spec.containers[]"
+            deny:
+              conditions:
+                all:
+                  - key: "{{ element.securityContext.privileged || `false` }}"
+                    operator: Equals
+                    value: true
+
+    - name: deny-privileged-init-containers
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "Privileged init containers are not allowed"
+        foreach:
+          - list: "request.object.spec.initContainers[]"
+            deny:
+              conditions:
+                all:
+                  - key: "{{ element.securityContext.privileged || `false` }}"
+                    operator: Equals
+                    value: true
+```
+### Policy 2: Deny host network access
+```bash
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-host-network
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: deny-host-network
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "Host network access is not allowed"
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.spec.hostNetwork || `false` }}"
+                operator: Equals
+                value: true
+```
+### Policy 3: Require Non-root containers
+```bash
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: require-non-root-containers
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "Containers must not run as root"
+        foreach:
+          - list: "request.object.spec.containers[]"
+            deny:
+              conditions:
+                any:
+                  # Explicit root user
+                  - key: "{{ element.securityContext.runAsUser || request.object.spec.securityContext.runAsUser || `0` }}"
+                    operator: Equals
+                    value: 0
+                  # Explicitly disabling non-root
+                  - key: "{{ element.securityContext.runAsNonRoot || request.object.spec.securityContext.runAsNonRoot || `false` }}"
+                    operator: Equals
+                    value: false
+
+    - name: require-non-root-init-containers
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "Init containers must not run as root"
+        foreach:
+          - list: "request.object.spec.initContainers[]"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.securityContext.runAsUser || request.object.spec.securityContext.runAsUser || `0` }}"
+                    operator: Equals
+                    value: 0
+                  - key: "{{ element.securityContext.runAsNonRoot || request.object.spec.securityContext.runAsNonRoot || `false` }}"
+                    operator: Equals
+                    value: false
+```
 ## Validation Modes
 - **audit:** Logs violations but allows resources (good for testing)
 - **enforce:** Rejects violations (production mode)
