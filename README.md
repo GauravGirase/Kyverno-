@@ -208,6 +208,55 @@ spec:
                     operator: Equals
                     value: false
 ```
+## Tier-2: Operational Standards
+### Policy 4: Require resource limits (Mutation + Validation)
+```bash
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-resource-limits
+spec:
+  rules:
+    - name: add-default-resources
+      match:
+        resources:
+          kinds:
+            - Pod
+      mutate:
+        foreach:
+          - list: "request.object.spec.containers[]"
+            patchStrategicMerge:
+              spec:
+                containers:
+                  - name: "{{ element.name }}"
+                    resources:
+                      requests:
+                        +(cpu): "100m"
+                        +(memory): "128Mi"
+                      limits:
+                        +(cpu): "500m"
+                        +(memory): "256Mi"
+
+    - name: add-default-resources-init
+      match:
+        resources:
+          kinds:
+            - Pod
+      mutate:
+        foreach:
+          - list: "request.object.spec.initContainers[]"
+            patchStrategicMerge:
+              spec:
+                initContainers:
+                  - name: "{{ element.name }}"
+                    resources:
+                      requests:
+                        +(cpu): "100m"
+                        +(memory): "128Mi"
+                      limits:
+                        +(cpu): "500m"
+                        +(memory): "256Mi"
+```
 ## Validation Modes
 - **audit:** Logs violations but allows resources (good for testing)
 - **enforce:** Rejects violations (production mode)
