@@ -10,9 +10,9 @@ resources:
     cpu: 500m
 config:
   webhooks:
-    - namespaceSelector:
-        matchExpressions:
-          - key: kyverno.io/audit
-            operator: In
-            values:
-              - "true"
+    namespaceSelector:
+      matchExpressions:
+        - key: kyverno.io/audit
+          operator: In
+          values:
+            - "true"

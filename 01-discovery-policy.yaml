@@ -1,0 +1,21 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: audit-require-imagepullpolicy
+spec:
+  validationFailureAction: audit # Audit only , other key is enforce
+  rules:
+    - name: check-imagepullpolicy
+      match:
+        resources:
+          kinds:
+            - Pod
+          namespaceSelector:
+            matchLabels:
+              audit-enabled: "true"
+      validate:
+        message: "imagePullPolicy must be Always"
+        pattern:
+          spec:
+            containers:
+              - imagePullPolicy: Always
